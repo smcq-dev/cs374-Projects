@@ -5,6 +5,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#define PATH_MAX_SIZE 1024
+
 int scan_directories(char *path);
 
 int main(int argc, char *argv[]) {
@@ -24,7 +26,6 @@ int scan_directories(char *path) {
     struct dirent *structd;
     struct stat statbuf;
     int total_size = 0;
-    #define PATH_MAX_SIZE 1024
     char fullpath[PATH_MAX_SIZE];
 
     DIR *dir = opendir(path);
