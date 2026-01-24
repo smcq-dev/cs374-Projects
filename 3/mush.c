@@ -7,7 +7,7 @@
 #define COMMAND_LINE_MAX_SIZE 2048
 #define MAX_WORDS_COMMAND_LINE 128
 
-int main(int argc, char *argv[]) {
+int main(void) {
 
     char buffer[COMMAND_LINE_MAX_SIZE];
     char *token;
@@ -31,6 +31,8 @@ int main(int argc, char *argv[]) {
         for (int i = 0; words[i] != NULL; i++) {
             printf("%s\n", words[i]);
         }
+
+        execvp(words[0], words);
 
     }
 }
