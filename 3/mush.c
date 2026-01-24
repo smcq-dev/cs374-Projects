@@ -22,17 +22,17 @@ int main(void) {
         
         fgets(buffer, sizeof(buffer), stdin);
 
+        if (buffer[0] == '\n') {
+            continue;
+        }
+
         if ((token = strtok(buffer, " \n")) != NULL) do {
-        printf("%s\n", token);
         words[counter] = token;
         counter ++;
   
         } while ((token = strtok(NULL, " \n")) != NULL);
 
         words[counter] = NULL;
-        for (int i = 0; words[i] != NULL; i++) {
-            printf("%s\n", words[i]);
-        }
 
         if (strcmp(words[0], "cd") == 0) {
             if(chdir(words[1]) == -1) {
