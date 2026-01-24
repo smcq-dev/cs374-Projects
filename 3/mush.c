@@ -38,9 +38,12 @@ int main(void) {
             if(chdir(words[1]) == -1) {
                 perror("Chdir failure");
             }
+        } else if (strcmp(words[0], "exit") == 0){
+            exit(0);
         } else {
             run_command(words);
         }
+
 
 
     }
