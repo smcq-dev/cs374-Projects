@@ -7,6 +7,8 @@
 #define COMMAND_LINE_MAX_SIZE 2048
 #define MAX_WORDS_COMMAND_LINE 128
 
+void run_command(char **words);
+
 int main(void) {
 
     char buffer[COMMAND_LINE_MAX_SIZE];
@@ -32,7 +34,22 @@ int main(void) {
             printf("%s\n", words[i]);
         }
 
-        execvp(words[0], words);
-
+        run_command(words);
     }
+}
+
+
+void run_command(char **words) {
+    pid_t pid = fork();
+
+    if (pid == 0) {
+        if (execvp(words[0], words) == -1) {
+            perror("Execvp failing");
+            exit(1);
+        }
+    }
+    else {
+        wait(NULL);
+    }
+
 }
