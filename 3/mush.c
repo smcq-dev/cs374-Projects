@@ -34,7 +34,15 @@ int main(void) {
             printf("%s\n", words[i]);
         }
 
-        run_command(words);
+        if (strcmp(words[0], "cd") == 0) {
+            if(chdir(words[1]) == -1) {
+                perror("Chdir failure");
+            }
+        } else {
+            run_command(words);
+        }
+
+
     }
 }
 
