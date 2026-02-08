@@ -17,6 +17,12 @@ struct flock header_lock = {
     .l_len= sizeof(int) * 2,
 };
 
+struct flock lock = {
+    .l_type=F_WRLCK, // Or F_RDLCK for a read lock
+    .l_whence=SEEK_SET,
+    .l_start=0,
+    .l_len=0,
+};
 
 struct flock unlock = {
     .l_type=F_UNLCK,  
@@ -41,12 +47,7 @@ int main(int argc, char *argv[]) {
 
     int num_pairs = counter;
 
-    // Testing
-    for (int i = 0; i < num_pairs; i++) {
-        printf("%d: %s\n", count[i], prefix[i]);
-    }
-    
-    //
+    // Opening logic
     int fd;
 
     if ( (fd = open("log.dat", O_RDWR | O_CREAT | O_TRUNC, 0666)) == -1) {
@@ -63,7 +64,7 @@ int main(int argc, char *argv[]) {
         return 2;
     }
 
-    //
+    // Forking and dumping logic
 
     int *offset = data;
 
@@ -71,7 +72,7 @@ int main(int argc, char *argv[]) {
 
     *offset = 0;
     *records = 0;
-    
+
     pid_t pid;
 
     for (int i=0; i < num_pairs; i++) {
@@ -91,18 +92,26 @@ int main(int argc, char *argv[]) {
         wait(NULL);
     }
 
-    //
+    fcntl(fd, F_SETLKW, &lock);
+
+    int num_records = *records;
+
+    for (int i=0; i < num_records; i++) {
+        char *record = (char *)data + sizeof(int) * 2 + i * RECORD_SIZE;
+        printf("%d: %s\n", i, record);
+    }
+
+    fcntl(fd, F_SETLKW, &unlock);
+
+    // Closing logic
 
     munmap(NULL, FILE_SIZE);
 
     close(fd);
 
-
 }
 
 void append_record(int fd, void *data, int count, char *prefix) {
-
-
     
     fcntl(fd, F_SETLKW, &header_lock);
 

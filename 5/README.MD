@@ -1,0 +1,6 @@
+What could go wrong if we didn't lock the header?
+If we didn't lock the header, we could really screw up the offset logic we have. One process could be reading a offset thats different than intended, leading to rewriting data or putting it in the wrong place. For example, two process read the offset pointer as the same before they update it, then sequentially write their data in that position, leading to an override. 
+
+
+What could go wrong if we didn't lock the record? (This is harder because in this program, as described, nothing will go wrong if we left the record locks out. But consider what might happen if there were a second external program that was reading records at the same time that your program was writing them. What might that second program see that wasn't right if the record lock wasn't in place?)
+If we don't lock the record, there's a chance that when a other process is reading the file, the another process will write where its reading, leading to incomplete, jumbled data. If one process is writing hi there!, but another is reading at the same time, it might only read hi th. This could lead to even more issues down the line depending on what we are doing with that process thats reading the file.
