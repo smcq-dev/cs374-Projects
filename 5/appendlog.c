@@ -3,13 +3,29 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/mman.h>
+#include <sys/wait.h>
 
 #define MAX_COMMANDS 5
 #define RECORD_SIZE 32
 #define NUM_RECORDS 1048576
 #define FILE_SIZE sizeof(int) * 2 + NUM_RECORDS * RECORD_SIZE
 
-void append_record(int fd, void *data);
+struct flock header_lock = {
+    .l_type=F_WRLCK, // Or F_RDLCK for a read lock
+    .l_whence=SEEK_SET,
+    .l_start=0,
+    .l_len= sizeof(int) * 2,
+};
+
+
+struct flock unlock = {
+    .l_type=F_UNLCK,  
+    .l_whence=SEEK_SET,
+    .l_start=0,
+    .l_len=0,
+};
+
+void append_record(int fd, void *data, int count, char *prefix);
 
 int main(int argc, char *argv[]) {
 
@@ -23,11 +39,14 @@ int main(int argc, char *argv[]) {
         counter++;
     }
 
+    int num_pairs = counter;
+
     // Testing
-    for (int i = 0; i < counter; i++) {
+    for (int i = 0; i < num_pairs; i++) {
         printf("%d: %s\n", count[i], prefix[i]);
     }
     
+    //
     int fd;
 
     if ( (fd = open("log.dat", O_RDWR | O_CREAT | O_TRUNC, 0666)) == -1) {
@@ -44,6 +63,36 @@ int main(int argc, char *argv[]) {
         return 2;
     }
 
+    //
+
+    int *offset = data;
+
+    int *records = offset + 1;
+
+    *offset = 0;
+    *records = 0;
+    
+    pid_t pid;
+
+    for (int i=0; i < num_pairs; i++) {
+        pid = fork();
+    
+        if (pid == 0) {
+
+            for (int j=0; j < count[i]; j++) {
+                append_record(fd, data, j, prefix[i]);
+            }
+            exit(0);
+        }
+    
+    }
+
+    for (int i=0; i < num_pairs; i++) {
+        wait(NULL);
+    }
+
+    //
+
     munmap(NULL, FILE_SIZE);
 
     close(fd);
@@ -51,4 +100,37 @@ int main(int argc, char *argv[]) {
 
 }
 
-void append_record(int fd, void *data);
+void append_record(int fd, void *data, int count, char *prefix) {
+
+
+    
+    fcntl(fd, F_SETLKW, &header_lock);
+
+    int *offset = data;
+
+    int *records = offset + 1;
+
+    (*records) ++;
+
+    int loc = *offset;
+
+    *offset += RECORD_SIZE;
+
+    fcntl(fd, F_SETLKW, &unlock);
+
+    struct flock record_lock = {
+    .l_type=F_WRLCK, // Or F_RDLCK for a read lock
+    .l_whence=SEEK_SET,
+    .l_start= 8 + loc,
+    .l_len= RECORD_SIZE,
+    };
+
+    char *new_loc = (char *)data + 8 + loc;
+    
+    fcntl(fd, F_SETLKW, &record_lock);
+
+    sprintf(new_loc, "%s %d", prefix, count);
+
+    fcntl(fd, F_SETLKW, &unlock);
+
+}
