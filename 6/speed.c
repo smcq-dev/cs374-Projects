@@ -12,6 +12,9 @@
 volatile sig_atomic_t sigusr1_happened;
 volatile sig_atomic_t sigusr2_happened;
 
+void handle_signals(int *speed);
+void handle_input(int *speed);
+
 void sigusr1_handler(int sig) {
     (void)sig;
     sigusr1_happened = 1;
@@ -26,8 +29,6 @@ void sigusr2_handler(int sig) {
 int main(void) {
 
     int speed = 0;
-
-    char buf[MAX_INPUT_SIZE];
 
     printf("PID=%d\n", getpid());
 
@@ -63,14 +64,6 @@ int main(void) {
     sigemptyset(&zero);
 
     while(1) {
-        if (speed < 0) {
-            speed = 0;
-            printf("oops! sorry but speed can't be negative, speed: 0\n");
-        }
-        if (speed > MAX_VELOCITY) {
-            speed = MAX_VELOCITY;
-            printf("your going a little fast there bud, slow down, speed: %d\n", speed);
-        }
         
         sigusr1_happened = 0;
         sigusr2_happened = 0;
@@ -81,32 +74,50 @@ int main(void) {
 
         int result = pselect(1, &readfds, NULL, NULL, NULL, &zero);
         if(result == -1 && errno == EINTR) {
-            if (sigusr1_happened == 1) {
-                speed -= 1;
-                printf("decrease speed to: %d\n", speed);
-            }
-            if (sigusr2_happened == 1) {
-                speed += 1;
-                printf("increase speed to: %d\n", speed);
-            }
+            handle_signals(&speed);
         }
         if (result > 0){
-            fgets(buf, sizeof(buf), stdin);
+            handle_input(&speed);
+        }
+    }  
+}
+
+void handle_signals(int *speed) {
+    if (sigusr1_happened == 1) {
+        *speed -= 1;
+        printf("decrease speed to: %d\n", *speed);
+    }
+    if (sigusr2_happened == 1) {
+        *speed += 1;
+        printf("increase speed to: %d\n", *speed);
+    }
+    
+}
+
+void handle_input(int *speed) {
+    char buf[MAX_INPUT_SIZE];
+    fgets(buf, sizeof(buf), stdin);
             
-            for(int i=0; i < (int)strlen(buf); i++) {
-                if (buf[i] == 'q') {
-                    exit(0);
-                }
-                if (buf[i] == '+') {
-                    speed += 1;
-                    printf("increase speed to: %d\n", speed);
-                }
-                if (buf[i] == '-') {
-                    speed -= 1;
-                    printf("decrease speed to: %d\n", speed);
-                }
+    for(int i=0; i < (int)strlen(buf); i++) {
+        if (buf[i] == 'q') {
+            exit(0);
+        }
+        if (buf[i] == '+') {
+            *speed += 1;
+            if (*speed > MAX_VELOCITY) {
+            *speed = MAX_VELOCITY;
+            printf("your going a little fast there bud, slow down, speed: %d\n", *speed);
             }
+            printf("increase speed to: %d\n", *speed);
+        }
+        if (buf[i] == '-') {
+            *speed -= 1;
+            if(*speed < 0) {
+                *speed = 0;
+                printf("oops! sorry but speed can't be negative, speed: 0\n");
+                continue;
+            }
+            printf("decrease speed to: %d\n", *speed);
         }
     }
-
 }
