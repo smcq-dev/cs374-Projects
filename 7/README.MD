@@ -22,8 +22,6 @@ There is a ppm image file we use that has 3 byte pixels. We access it's data thr
 
 ## Functions
 
-_[This is a tree of functions and their short descriptions]_
-
 * `main()`
   * `ppm_read()`: Reads a PPM image from a file into a struct
   * `pthread_create()`: Creates a thread for each image slice
